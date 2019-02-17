@@ -1,0 +1,18 @@
+---
+title: "Data Visualization, Exploration and Analysis"
+author: "Kamarul Imran Musa"
+date: "2/17/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r child = 'chapter1.Rmd'}
+```
+
+```{r child = 'chapter2.Rmd'}
+```
+
+rmarkdown::render('book2.Rmd')
