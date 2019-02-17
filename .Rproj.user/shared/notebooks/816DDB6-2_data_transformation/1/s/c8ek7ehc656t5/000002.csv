@@ -1,0 +1,7 @@
+"0","library(forcats)"
+"0","data_f$male2 <- data_f$male %>% fct_recode('Fem' = 'No', 'Male' = 'Yes')"
+"0","data_f <- data_f %>% mutate(malay = fct_recode(race2, "
+"0","                                        'Non-Malay' = 'Chi', "
+"0","                                        'Non-Malay' = 'Ind', "
+"0","                                        'Non-Malay' = 'Others'))"
+"0","head(data_f) ; tail(data_f)"

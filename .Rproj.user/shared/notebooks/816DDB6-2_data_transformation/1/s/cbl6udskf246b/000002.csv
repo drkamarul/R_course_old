@@ -1,0 +1,2 @@
+"0","freq_species_home <- starwars %>% count(species, homeworld, sort = TRUE)"
+"0","freq_species_home"

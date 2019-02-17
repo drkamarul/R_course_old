@@ -1,0 +1,2 @@
+"0","mysw_m_40 <- mysw %>% filter(gender == 'male', bmi >= 40)"
+"0","mysw_m_40"

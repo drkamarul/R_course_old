@@ -1,0 +1,2 @@
+"0","mysw <- mysw %>% mutate(bmi2 = bmi^2)"
+"0","mysw"

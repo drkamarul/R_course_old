@@ -1,0 +1,2 @@
+"0","freq_species <- starwars %>% count(species, sort = TRUE)"
+"0","freq_species"

@@ -1,0 +1,6 @@
+"0","mysw_g %>% summarise(meanbmi = mean(bmi, na.rm = TRUE), "
+"0","                     meanht  = mean(height, na.rm = TRUE),"
+"0","                     meanmass = mean(mass, na.rm = TRUE),"
+"0","                     sdbmi = sd(bmi, na.rm = TRUE),"
+"0","                     sdht = sd(height, na.rm = TRUE),"
+"0","                     sdmass = sd(mass, na.rm = TRUE))"

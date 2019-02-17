@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1550417773648.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "1D41CC7D",
+    "lastKnownWriteTime" : 1550418625,
+    "last_content_update" : 1550418625223,
+    "path" : "D:/KIM/OneDrive/OneDrive - Universiti Sains Malaysia/R_Course_Book/1_data_visualization.Rmd",
+    "project_path" : "1_data_visualization.Rmd",
+    "properties" : {
+        "cursorPosition" : "1,72",
+        "docOutlineVisible" : "1",
+        "scrollLine" : "0"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}
