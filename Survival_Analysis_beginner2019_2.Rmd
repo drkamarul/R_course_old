@@ -1,0 +1,464 @@
+---
+title: |
+  | Survival Analysis: 
+  | Kaplan-Meir and 
+  | Cox Proportional Hazard Regression
+author: | 
+  | Kamarul Imran Musa
+  | Assoc Prof (Epidemiology and Statistics)
+date: '`r Sys.Date()`'
+output: 
+  pdf_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+\newpage
+
+# Introduction
+
+This will be a brief practical note on running survival analysis in R. 
+
+Parts of this note are taken from this source  <http://ftp.auckland.ac.nz/software/CRAN/doc/vignettes/HSAUR/Ch_survival_analysis.pdf>. The source comes from the book entitled A Handbook of Statistical Analyses Using R - and if you are interested - the book can be bought here <https://www.amazon.com/Handbook-Statistical-Analyses-Using-Second/dp/1420079336>
+
+## Packages
+
+To run the tutorial, we will use 
+
+- **survival**: This is a package necessary to run survival analysis. There are other survival packages that can run survival analysis which you can find here <https://cran.r-project.org/web/views/Survival.html>
+- **survminer**: a package to plot survival objects
+- **tidyverse**: a package for data transformation
+- **pec**: we will use a dataset from this package 
+- **coin**:  we use a dataset named **g3** for our practical so we can reproduce the outputs from the HSAUR book.
+- **broom**: to make prettier outputs
+
+Remember, check if all packages are available in your R library. If you have not installed them, use `install.packages()` function to download and install the packages. 
+
+Note: If or once the packages are already installed, then load the package
+
+```{r}
+library(survival)
+library(survminer)
+library(tidyverse)
+library(coin)
+library(pec)
+```
+
+
+# Hands-on: Data
+
+The tutorial uses a dataset named *glioma*. 
+
+Now let us load the data 
+
+```{r}
+head(glioma)
+```
+
+And take a peek at our data
+
+```{r}
+glimpse(glioma)
+```
+
+And summary statistics are
+
+```{r}
+summary(glioma)
+```
+
+*Glioma* data is an object of *data.frame* class. The dataset has
+
+1.  a time variable (*time*) and 
+2.  an event variable (*event*). 
+
+So, it is a time-to-event dataset. There are other variables too for example age,sex, histology and group. 
+
+In the dataset: 
+
+1.  variable time *time* - measured as months
+2.  variable event *event*  - categorized as TRUE or FALSE (logical)
+
+Let us change the categories for the event variable
+
+1.  from TRUE to Yes
+2.  from FALSE to Censored
+
+```{r}
+glioma <- glioma %>% mutate(event_fac = as.factor(event)) %>% 
+  mutate(event_fac = recode(event_fac, "TRUE" = "failed", "FALSE" = "censored"))
+head(glioma)
+```
+
+Note: you can read more about `dplyr::recode()` here <https://dplyr.tidyverse.org/reference/recode.html> 
+
+
+## glioma dataset  
+
+About the histology for the glioma data
+
+```{r}
+glioma %>% group_by(histology) %>% count()
+```
+
+For now, we will analyze data on patients with Grade 3 glioma **only**. To do that, we will create a new dataset named as `g3` using the `dplyr::filter()` function. 
+
+We can see that there are 17 patients with Grade 3 histology. 
+
+```{r}
+g3 <- glioma %>% filter(histology == "Grade3")
+g3
+```
+
+
+# Hands-On: Kaplan-Meier survival estimates 
+
+## Kaplan-Meier survival estimates
+
+This is a non-parametric survival estimates. It provides the survival probability estimates at different time.  
+
+## Survival probability
+
+Using `survfit()`, we will estimate the survival probability using the Kaplan-Meier estimates. Kaplan-Meier is a non-parametric survival analysis. 
+
+We specify 
+
+1.  the time variable as *time* and
+2.  the event variable as the *event_fac* **BE CAREFUL HERE**
+
+We will estimate the survival probabilities for variable *group*. There are 2 levels (based on treatment modality) in the group: *Control* and *RIT*.
+
+We will name the object (outputs) for the Kaplan-Meier estimate as `KM_1`
+
+
+```{r}
+KM_1 <- survfit(Surv(time = time, event = event_fac == "failed" ) ~ group, data = g3)
+summary(KM_1)
+```
+
+# Hands-on: Plotting the survival probability  
+
+We will plot the survival probability based on the KM estimate.
+
+The plot provides
+
+1.  y axis: survival probability
+2.  x axis: time
+
+```{r}
+ggsurvplot(KM_1, data = g3, risk.table = TRUE, 
+           linetype = c(1,2), pval = TRUE)
+```
+
+Now, we will do the same for variable *histology* == 'GBM' group. Remember use `dplyr::filter()` to select observations in the GBM group.  
+
+```{r}
+g4 <- glioma %>% filter(histology == "GBM")
+g4 %>% group_by(histology) %>% count()
+```
+
+Run the Kaplan-Meier estimates and named the output as KM_2
+
+```{r}
+KM_2 <- survfit(Surv(time, event = event_fac == "failed") ~ group, 
+                data = g4)
+KM_2
+summary(KM_2)
+```
+
+Plot the survival estimates
+
+```{r}
+ggsurvplot(KM_2, data = g4, risk.table = TRUE, linetype = c(1,2), pval = TRUE)
+```
+
+# Hands-on: Comparing survival estimates from Kaplan-Meier analysis 
+
+## Log-rank test
+
+Plotting Kaplan-Meier survival curves provides graphical representation of survival probabilities in different group. 
+
+The question is : Do the survival estimates differ between different levels (groups)?
+
+To answer, we test the null hypothesis that the survival times between levels in variable *group* are similar.
+
+A few available tests, for example:
+
+1.  log-rank test (default)
+2.  peto-peto test
+
+```{r}
+survdiff(Surv(time, event = event_fac == "failed") ~ group, data = g3)
+```
+
+The survival times between the *Control* and *RIT* groups are different (p = 0.0138) in patients with Grade 3 glioma. 
+
+```{r}
+survdiff(Surv(time, event = event_fac == "failed") ~ group, data = g4)
+```
+
+The survival times between the *Control* and *RIT* groups are also different (p < 0.001) in patients with Grade 4 glioma. 
+
+# Hands-on: Cox proportional hazard regression
+
+## Advantages of Cox proportional hazard regression
+
+The disadvantages of the Kaplan-Meier (KM) analysis include these:
+
+1.  The need to categorize numerical variable
+2.  It is a univariable analysis
+3.  It is a non-parametric analysis
+
+
+To overcome the limitations of the KM analysis, we can model our survival data using the semi-parametric **Cox proportional hazard regression**. 
+
+We will use **Breast cancer survival data (GBSG2)** from **pec** package
+
+Load the *GBSG2* data
+
+```{r}
+data(GBSG2)
+```
+
+Take a peek at data
+
+```{r}
+glimpse(GBSG2)
+```
+
+Get the summary statistics
+
+```{r}
+summary(GBSG2)
+```
+
+In the dataset (686 observations):
+
+1.  the time variable: *time* (days)
+2.  the event variable: *cens*() (coded as 1 vs 0). The event of interest is 1 and censored cases (for example, loss to follow up) is 0. 
+
+299 developed the event (n = 299)
+
+```{r}
+table(GBSG2$cens)
+```
+
+Let us convert the `cens` (0 and 1) variable to 
+
+1.  a variable named `event`
+2.  and code *failed* for 1, and *censored* for 0
+
+```{r}
+GBSG2 <- GBSG2 %>% mutate(event = recode(cens, 
+                                         `1` = "failed", `0` = "censored"))
+table(GBSG2$event)
+```
+
+
+## Estimation of Cox proportional hazards regression
+
+We will run a generalized linear model using Cox PH regression with
+
+1.  time variable *time*
+2.  event variable *event == "failed"*
+3.  all covariates 
+
+This becomes a multivariable Cox PH model
+
+
+```{r}
+GBSG2_coxph <- coxph(Surv(time = time, event = event == 'failed') ~ .,
+                     data = GBSG2)
+summary(GBSG2_coxph)
+```
+
+The results:
+
+1.  The `coef` is the log hazard. 
+2.  And the `exp(coef)` is hazard ratio. 
+
+Interpretation: 
+
+1.  Each 1 unit increase in **progrec**, the adjusted log hazard for dying change by -0.002. So, with 10 units increase in **progrec**, the adjusted log hazard for dying change by -0.02
+2.  Each 1 unit increase in **progrec**, the adjusted rate for hazard or the risk for dying changed by 0.998. Or similarly, the risk for dying with 1 unit increase in **progrec**reduces by 0.2%.
+
+## Inference from Cox proportional hazard regression
+
+To do inference, we estimate
+
+1.  the Wald test. This is shown with p-values in the example above
+2.  the 95% confidence intervals for the log hazards
+
+```{r}
+# the confidence intervals for log hazards
+ci <- confint(GBSG2_coxph)
+ci
+```
+
+We can transform log hazard to hazard ratio by exp the $\hat\beta$. It is more interesting for applied scientists to make inferences based on the 95% CI of the hazard ratios
+
+```{r}
+# hazard ratios and the corresponding confidence intervals 
+exp(cbind(coef(GBSG2_coxph), ci))
+```
+
+This result implies that:
+
+1.  patients treated with a hormonal therapy (`horThyes`) had a lower
+risk ($29\%$ lower) to die. Thus they survived longer compared to women who were not treated this
+way 
+2.  the risk for dying for patients treated with a hormonal therapy (`horThyes`) can be as small as $9\%$ or as big as $45\%$ at $95\%$ confidence levels.  
+
+## **tidy()** for nicer output
+
+`broom::tidy` can give nicer outputs
+
+```{r}
+broom::tidy(GBSG2_coxph)
+```
+
+and to get the *hazard ratios*
+
+```{r}
+broom::tidy(GBSG2_coxph, exponentiate = TRUE)
+```
+
+# Hands-on: Prediction
+
+We can predict
+
+1.  the linear predictor
+2.  the risk (risk score exp(lp))
+3.  the he expected number of events given the covariates and follow-up time
+
+```{r}
+library(broom)
+lp <- augment(GBSG2_coxph, data = GBSG2)
+risks <- augment(GBSG2_coxph, data = GBSG2, type.predict = "risk")
+expected <- augment(GBSG2_coxph, data = GBSG2, type.predict = "expected")
+```
+
+We can also plot the survival
+
+```{r}
+mod_coxph <- coxph(Surv(time = time, event = event == 'failed') ~ horTh + age + tgrade, data = GBSG2)
+ggadjustedcurves(mod_coxph, data = GBSG2)
+ggadjustedcurves(mod_coxph, data = GBSG2, variable = "horTh")
+ggadjustedcurves(mod_coxph, data = GBSG2, method = "average", variable = "horTh")
+```
+
+
+# Hands-on: Checking the proportional hazard assumption
+
+## Proportional hazard assumption
+
+The most important assumption in Cox PH regression is the proportionality of the hazards over time.
+
+A check of the proportional hazards assumption can be done by looking at the parameter estimates $\beta_1, ..., \beta_q$ over time. 
+
+We can safely assume proportional hazards when the estimates don't vary much over time. 
+
+The null hypothesis of constant regression coefficients can be tested, both globally as well as for each covariate, by using the cox.zph function.
+
+
+```{r}
+GBSG2_zph <- cox.zph(GBSG2_coxph)
+GBSG2_zph
+```
+
+Evidence of time-varying effects (non-proportionality), especially for age (p = 0.0855)
+and tumor grading. But we keep at this for now. Because this requires a more advanced method.
+
+So basically, if the GLOBAL test gives non-significant (p> 0.05), the assumption of proportional hazard is met. if it is less than 0.05, we need to remedial measures. 
+
+We can plot the log hazard over time, to see the performance of our model (in terms of proportionality)
+
+```{r}
+plot(GBSG2_zph, var = "age")
+plot(GBSG2_zph, var = "tgradeIII")
+plot(GBSG2_zph, var = "menostatPre")
+plot(GBSG2_zph, var = "progrec")
+plot(GBSG2_zph, var = "horThyes")
+
+
+```
+
+For now, we will assume the proportionality of hazard is acceptable. In the case of serious violation of proportionality of hazard, we can remedy using 
+
+1.  stratified cox regression
+2.  extended cox regression using time-varying dependent variable
+3.  parametric survival analysis
+
+# Home-work
+
+## Cox proportional hazard regression 
+
+In R, the most common packacge for typical time-to-event data is **survival** package
+
+To perform time-to-event data analysis, we need to load the **survival** library.
+
+We will use a data frame using the built-in lung cancer dataset that ships with the survival package. :
+
+1.  inst: Institution code
+2.  time: Survival time in days
+3.  status: censoring status 1=censored, 2=dead
+4.  age: Age in years
+5.  sex: Male=1 Female=2
+6.  ph.ecog: ECOG performance score (0=good 5=dead)
+7.  ph.karno: Karnofsky performance score as rated by physician
+8.  pat.karno: Karnofsky performance score as rated by patient
+9.  meal.cal: Calories consumed at meals
+10. wt.loss: Weight loss in last six months
+
+
+Load the library  
+
+```{r}
+library(survival)
+```
+
+Describe data and get summary statistics
+
+```{r}
+glimpse(lung)
+summary(lung)
+```
+
+and declare the time to event
+
+```{r}
+tte <- Surv(time = lung$time, event = lung$status==2)
+tte
+```
+
+## Estimation and inference
+
+perform Cox PH model to estime the log hazard and the hazard ratios.
+
+1.  constant only model
+
+```{r}
+cox_mod <- coxph(tte ~ 1, data = lung)
+summary(cox_mod)
+```
+
+2.  multivariable model
+
+```{r}
+cox_mod2 <- coxph(tte ~ 1 + ph.ecog + factor(sex) + ph.karno, data = lung)
+summary(cox_mod2)
+
+```
+
+
+# Environment
+
+```{r}
+sessionInfo()
+```
+
