@@ -1,0 +1,331 @@
+---
+title: |
+  | Binary Logistic Regression
+author: |
+  | Kamarul Imran Musa
+  | Assoc Prof (Epidemiology and Biostatistics)
+date: '`r Sys.Date()`'
+output: 
+  pdf_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 3 
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+\newpage
+
+# Introduction
+
+We will be using examples from <http://ftp.auckland.ac.nz/software/CRAN/doc/vignettes/HSAUR/Ch_logistic_regression_glm.pdf>
+
+We will use 5 packages
+
+1.  the built in **stat** package - to run Generalized Linear Model. it is already loaded
+2.  **HSAUR** package - to use the `plasma` dataset as an example. 
+3.  **tidyverse** package - for data transformation 
+4.  **broom** package - to tidy up the results 
+4.  **LogisticDx** package - to do model assessment
+
+
+```{r}
+library(tidyverse)
+library(broom)
+library(HSAUR)
+library(LogisticDx)
+```
+
+# Data
+
+We will use a dataset named **plasma**.
+
+Call data into R
+
+```{r}
+plasma <- plasma
+```
+
+Take a peek at data
+
+```{r}
+glimpse(plasma)
+```
+
+Get summary statistics
+
+```{r}
+summary(plasma)
+```
+
+The **plasma** data contain 
+
+1.  Dependent variable = a binary variable (ESR < 20, ESR > 20)
+2.  Independent variables:
+    - fibrinogen - numerical variable
+    - globulin -  numerical variable
+
+Verify that ESR is a factor (categorical variable)
+
+- $ESR>20$ is coded as 2
+- $ESR<20$ is coded as 1
+
+```{r}
+str(plasma$ESR)
+```
+
+# Hands-on 1 : Estimation
+
+Objective: To estimate the regression parameters $\hat\beta_s$
+
+Two approaches:
+
+1.  Univariable = 1 independent variable (covariate)
+2.  Multivariable = 2 or more independent variable (covariates)
+
+## Univariable analysis 
+
+One dependent variable with one independent (predictor) variable.
+
+1.  The dependent variable is ESR, a binary variable.
+2.  The predictor is a numerical (continouos) variable 
+
+We first estimate the log odds (the regression parameters, $\beta$). 
+
+$$log\frac{Pr(ESR = high)}{1 - Pr(ESR = high)}  = \beta_0 + \beta_1(fibrinogen)$$
+
+Estimate the parameter
+
+```{r}
+plasma_glm_1 <- glm(ESR ~ fibrinogen, data = plasma, 
+                    family = binomial(link = 'logit'))
+```
+
+Get the summarized result of the model
+
+```{r}
+summary(plasma_glm_1)
+```
+
+Cleaner result in data frame format
+
+```{r}
+tidy(plasma_glm_1, conf.int = TRUE)
+```
+
+## Multivariable analysis
+
+Unlikely only one variable (fibrinogen) relates with the outcome. Consider adding other seemingly important independent variable. We will add **globulin** to the model
+
+Estimate the model
+
+```{r}
+plasma_glm_2 <- glm(ESR ~ fibrinogen + globulin, data = plasma,
+                    family = binomial(link = 'logit'))
+```
+
+Summary of estimates
+
+```{r}
+summary(plasma_glm_2)
+```
+
+Cleaner result in data frame format
+
+```{r}
+res_mv <- tidy(plasma_glm_2, conf.int = TRUE)
+res_mv
+```
+
+## Estimate the Odds Ratio
+
+For lay person, it is difficult to interpret the log odds. It is easier to interpret - for lay person - the model using the odds ratio. 
+
+This can be done by $\exp^{\beta_i}$
+
+```{r}
+exp(plasma_glm_1$coefficients)
+```
+
+We do not generally interpret $\hat\beta_0$. In the model, it means that if **fibrinogen** increases by 1 unit, the odds to be in ESR > 20 group, increases by 6.22 times.  
+
+In multivariable model, the adjusted odds ratio are
+
+```{r}
+or_mv <- exp(plasma_glm_2$coefficients)
+or_mv <- round(or_mv, digits = 4)
+or_mv
+```
+
+Let us combine the results
+
+```{r}
+bind_cols(res_mv, adj_or = or_mv)
+```
+
+In the model, it means that if **fibrinogen** increases by 1 unit (when **globulin** is adjusted), the odds to be in ESR > 20 group, increases by 6.76 times. 
+
+# Hands-on 2 : Inference
+
+## Inference 
+
+Let us examine the inferences of the model. 
+
+This involves:
+
+1.  checking the p-values
+2.  getting the 95% confidence intervals (CI)
+
+For the univariable model (model 1), the 95% CI for the log odds are:
+
+```{r}
+confint(plasma_glm_1)
+```
+
+Interpretation: 
+
+With 1 unit increase in fibrinogen, the log odds for having CAD can be as small as 0.34 and as big as 4.00 at 95% confidence level. 
+
+For the multivariable model (model 2), the $95\%$ CI for the adjusted log odds are:
+
+```{r}
+ci_mv <- confint(plasma_glm_2)
+ci_mv
+```
+
+The results shows:
+
+1.  that with 1 unit increase in fibrinogen (while adjusting for globulin), the log odds for having CAD ranged from 0.34 to 4.30 at $95\%$ CI 
+2.  that with 1 unit increase in globulin (while adjusting for fibrinogen), the log odds for having CAD ranged from -0.07 to 0.43 at $95\%$ CI
+
+Combine the results
+
+```{r}
+mv_res_beta <- bind_cols(res_mv,
+                         low_ci_b = ci_mv[,1],
+                         upper_ci_b = ci_mv[,2])
+mv_res_beta
+```
+
+
+## Model comparison
+
+Is there any difference between model 1 and model 2 at level of significance of $5\%$?
+
+```{r}
+anova(plasma_glm_2, plasma_glm_1, test = 'Chisq')
+```
+
+Not significant at $5\%$ level. But, for the practical sake, we accept the multivariable model as our model of choice
+
+## Inference using OR
+
+For univariable model, to estimate the odds ratio 
+
+```{r}
+exp(confint(plasma_glm_1))
+```
+
+For multivariable model, to estimate the odds ratios
+
+```{r}
+ci_or_mv <- exp(confint(plasma_glm_2))
+ci_or_mv <- round(ci_or_mv, digits = 3)
+ci_or_mv
+```
+
+
+Combine results
+
+```{r}
+or_mv
+ci_or_mv
+bind_cols(res_mv, adj_or = or_mv,
+          l_ci_or = ci_or_mv[,1], u_ci_or = ci_or_mv[,2])
+```
+
+# Hands-on 3: Prediction
+
+## Prediction 
+
+We used `broom::augment()` to calculate the
+
+1.  log odds and probability
+2.  residuals
+3.  hat values
+4.  Cooks distance
+5.  standardized residuals
+
+## Predict the log odds
+
+the .fitted column represents the estimated log odds for each row
+
+```{r}
+augment(plasma_glm_2)
+```
+
+## Predict the probability
+
+the .fitted column represents the estimated probability for each row
+
+
+```{r}
+augment(plasma_glm_2, type.predict = "response")
+```
+
+
+To show the calculation for 
+
+The first observation:
+
+1.  fibrinogen = 2.52
+2.  globulin = 38
+
+The second observation:
+
+1.  fibrinogen = 2.56
+2.  globulin = 31
+
+```{r}
+# -12.79 + 1.91(2.52) + 0.156(38) = 
+-12.7921 + 1.9104*2.52 + 0.1558*38 
+-12.7921 + 1.9104*2.56 + 0.1558*31
+
+```
+
+Calculate the predicted probability of being in the high ESR group for all observations  
+
+The first 6 observations have these probability (of having high ESR)
+
+Let us confirm with manual calculation $\frac{exp^\beta}{1 + exp^\beta}$
+
+For the first and second observations:
+
+```{r}
+exp(-2.057492) / (1 + exp(-2.057492))
+exp(-3.071676) / (1 + exp(-3.071676))
+```
+
+These mean:
+
+1.  11.3% probability of being in the high ESR group for the 1st observation 
+2.  4.4% probability of being in the high ESR group for the 2nd observation
+
+# Model fitness
+
+```{r}
+library(LogisticDx)
+fit_m <- gof(plasma_glm_2)
+fit_m$gof
+```
+
+
+# Environment
+
+```{r}
+sessionInfo()
+```
+
+
