@@ -1,2 +1,0 @@
-"0","ggplot(data = gapminder) +"
-"0","  geom_bar(mapping = aes(x = continent))"

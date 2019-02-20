@@ -1,4 +1,0 @@
-"0","mypop <- ggplot(data = gapminder, mapping = aes(x = log(gdpPercap), y = lifeExp)) +"
-"0","  geom_point() +"
-"0","  geom_smooth(mapping = aes(colour = continent))"
-"0","mypop"

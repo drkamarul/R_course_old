@@ -1,3 +1,0 @@
-"0","library(knitr)"
-"0","options(width = 90)"
-"0","knitr::opts_chunk$set(tidy = TRUE, echo = TRUE, fig.margin=FALSE, fig.show = ""asis"", fig.align = ""center"", fig.width = 6, fig.asp = 1, size = ""tiny"", results = ""markup"")"

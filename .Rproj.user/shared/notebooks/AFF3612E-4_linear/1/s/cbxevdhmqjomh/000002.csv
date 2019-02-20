@@ -1,3 +1,0 @@
-"0","coronary = subset(coronary, select = -c(id, cad, age))"
-"0","# remove id, cad, age from our data since we're not going to use them,"
-"0","# easier to specifiy multivariable model."

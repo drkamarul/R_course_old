@@ -1,3 +1,0 @@
-"0","ggplot(data = gapminder) +"
-"0","  geom_point(mapping = aes(x = year, y = lifeExp), colour = 'blue')"
-"0",""

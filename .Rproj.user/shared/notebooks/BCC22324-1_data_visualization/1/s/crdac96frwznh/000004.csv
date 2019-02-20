@@ -1,6 +1,0 @@
-"0","library(here)"
-"0","ggsave(plot = myplot, here(""plots"",""my_pdf_plot.pdf""))"
-"2","Saving 7 x 7 in image
-"
-"0","ggsave(plot = myplot, here(""plots"",""my_png_plot.png"")) "
-"0","ggsave(plot = myplot, here(""plots"",""my_jpg_plot.jpg""))"
