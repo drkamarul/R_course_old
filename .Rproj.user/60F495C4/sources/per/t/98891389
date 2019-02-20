@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1550505399855.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "4197374025",
+    "id" : "98891389",
+    "lastKnownWriteTime" : 1550506423,
+    "last_content_update" : 1550506423585,
+    "path" : "D:/KIM/OneDrive/OneDrive - Universiti Sains Malaysia/R_Course_Book/rmd/4_linear.Rmd",
+    "project_path" : "rmd/4_linear.Rmd",
+    "properties" : {
+        "cursorPosition" : "394,0",
+        "docOutlineVisible" : "1",
+        "scrollLine" : "393"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

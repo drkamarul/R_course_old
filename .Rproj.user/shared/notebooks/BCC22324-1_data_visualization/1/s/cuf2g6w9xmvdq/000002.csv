@@ -1,0 +1,2 @@
+"0","ggplot(data = gapminder) +"
+"0","  geom_smooth(mapping = aes(x = gdpPercap, y = lifeExp))"

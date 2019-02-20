@@ -1,0 +1,1 @@
+"0","plot(rraw_chol ~ coronary$dbp, xlab = ""DBP"", ylab = ""Raw Residuals"")"

@@ -1,2 +1,0 @@
-"0","mysw_ht_45 <- mysw %>% filter(height >200 | bmi >45, bmi != 'NA')"
-"0","mysw_ht_45"

@@ -1,0 +1,1 @@
+"0","boxplot(chol ~ gender, data = coronary)"

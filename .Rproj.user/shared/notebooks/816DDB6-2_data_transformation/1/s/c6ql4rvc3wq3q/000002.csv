@@ -1,2 +1,0 @@
-"0","mysw <- mysw %>% mutate(bmi = mass/(height/100)^2)"
-"0","mysw"

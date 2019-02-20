@@ -1,0 +1,2 @@
+"0","# create a bib file for the R packages used in this document"
+"0","knitr::write_bib(c('foreign', 'lattice', 'epiDisplay', 'psych', 'rsq', 'MASS', 'car', 'broom'), file = 'skeleton.bib')"

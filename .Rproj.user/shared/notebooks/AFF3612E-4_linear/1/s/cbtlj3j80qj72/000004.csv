@@ -1,0 +1,20 @@
+"0","# library"
+"0","library(foreign)"
+"0","library(epiDisplay)"
+"0","library(psych)"
+"0","library(lattice)"
+"0","library(rsq)"
+"0","library(MASS)"
+"0","library(car)"
+"2","Loading required package: carData
+"
+"2","
+Attaching package: ‘car’
+
+"
+"2","The following object is masked from ‘package:psych’:
+
+    logit
+
+"
+"0","library(broom)"

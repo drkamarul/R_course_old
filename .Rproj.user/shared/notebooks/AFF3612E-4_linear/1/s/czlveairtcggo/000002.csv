@@ -1,0 +1,3 @@
+"0","rstd_chol = rstandard(mlr_chol1)  # standardized residuals"
+"0","pstd_chol = scale(predict(mlr_chol1))  # standardized predicted values"
+"0","plot(rstd_chol ~ pstd_chol, xlab = ""Std predicted"", ylab = ""Std residuals"")"

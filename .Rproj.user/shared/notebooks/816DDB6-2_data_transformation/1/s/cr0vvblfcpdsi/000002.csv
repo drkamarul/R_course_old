@@ -1,2 +1,0 @@
-"0","mysw <- starwars %>% select(name, gender, height, mass)"
-"0","mysw"
