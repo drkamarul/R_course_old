@@ -1,0 +1,494 @@
+---
+title: | 
+  | Practicals
+  | Multinomial Logistic Regression
+  | DrPH (Epidemiology) Speciality
+author: |
+  | Kamarul Imran Musa
+  | Associate Professor (Epidemiology and Statistics)
+date: '`r Sys.Date()`'
+output:
+  pdf_document:
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
+  html_document: 
+    keep_md: yes
+    number_sections: yes
+    toc: yes
+    toc_float: yes
+---
+
+\newpage 
+
+# Practicals 1
+
+We will practice using the materials available on the ats.ucla website. But, we will do some modifications in order to simulate result better to suit our needs. The link to source is  <https://stats.idre.ucla.edu/stata/examples/alr2/applied-logistic-regression-second-edition-by-hosmer-and-lemeshowchapter-8-special-topics/m>
+
+You have to be careful with the codes of the variables. Pay attention to the labels and levels of the variable. STATA software provides a more polish interface of results and the coding of variables seems easier to understand too. 
+
+## Data
+
+### Read data
+
+
+We will use `haven::read_dta()` function to read stata `.dta` data into the memory. Remember, we can also use `foreign::read.dta()` function to read stata `.dta` data. It is your choice.  
+
+The dataset is a dataset where:
+
+1.  me: the outcome variable is mammography experience (0 = never, 1 = within a year, 2 = over a year ago)
+2.  sympt: "You do not need a mamogram unless you develop symptoms". Codes are, 1 = Strongly Agree, 2 = Agree, 3 = Disagree, 4 = Strongly Disagree
+3.  pb: Perveived benefit of mammography. Score between 5 - 20 
+4.  HIST: Mother or Sister with a history of breast cancer. Codes are 0 = No, 1 = Yes 
+5.  bse: "Has anyone taught you how to examine your own breasts: that is BSE". Codes are 0 = No, 1 = Yes
+6.  detc: "How likely is it that a mamogram could find a new case of breast cancer". Codes are 1= Not likely, 2 = Somewhat likely, 3 = Very likely
+
+We examine the first 6 observations. Then we describe the variables in the data.
+
+```{r}
+library(tidyverse)
+library(haven)
+dat.m1 <- read_dta('mammog9.dta')
+```
+
+We can then
+
+1.  check types variables
+2.  observe the first 6 observations of data
+3.  get summary statistics
+
+```{r}
+glimpse(dat.m1)
+head(dat.m1)
+summary(dat.m1)
+```
+
+Variable `me` is a class of numeric. We will convert it to a new variable `me2` as a class of factor variable. To do that, we use `factor()` function. The function will categorize a numerical variable
+
+```{r}
+dat.m1$me2 <- factor(dat.m1$me, 
+                     labels = c("never","within.a.year","over.a.year.ago"))
+levels(dat.m1$me2)
+```
+
+
+Let us confirm that
+
+- 0 is never
+- 1 is within a year
+- 2 over a year
+
+```{r}
+dat.m1 %>% select(me, me2) %>% head()
+```
+
+We will do the same thing to variable `hist`:
+
+```{r}
+dat.m1$hist2 <- factor(dat.m1$hist, labels = c("no","yes"))
+levels(dat.m1$hist2)
+```
+
+### Describe data
+
+**psych** and **summarytools** can provide nicer and more descriptive of data
+
+```{r}
+library(psych)
+describe(dat.m1)
+```
+
+Below, calculate the frequencies:
+
+```{r}
+dat.m1 %>% count(me2)
+dat.m1 %>% count(me2, hist2)
+```
+
+
+## Estimation
+
+### VGAM package 
+
+We will use **VGAM** package and we need to reverse the levels for variable **me2** to replicate the outputs in Applied Logistic Regression book. To do that, we make regroup `never` (the last group) as the reference category.
+
+What we do below are:
+
+- confirm the order of me2
+- generate me3 equals to me2
+- change order of me3 from over a year to within a year to never
+- confirm observations are still correct
+
+```{r}
+
+dat.m1$me2 %>% levels()
+# [1] "never"           "within.a.year"   "over.a.year.ago"
+
+dat.m1 <- dat.m1 %>% 
+  mutate(me3 = fct_relevel(me2, c("over.a.year.ago", 'within.a.year', 'never')))
+         
+dat.m1 %>% select(me, me2, me3) %>% head()
+```
+
+Let us check the order
+
+```{r}
+levels(dat.m1$me2) ; levels(dat.m1$me3)
+```
+
+
+The function to run the multinomial logistic regression is `VGAM::vglm`, It will run the estimation for
+
+1.  group 1 vs group 3 : me = over a year ago vs me = never
+2.  group 2 vs group 3 : me = within a year ago vs me = never
+
+So, the reference group is me == never group when we run `VGAM::vglm()` function
+
+```{r}
+levels(dat.m1$me3)
+```
+
+Perform estimation:
+
+```{r}
+library(VGAM)
+fitmlog1 <- vglm(me3 ~ hist2, multinomial, data = dat.m1)
+summary(fitmlog1)
+```
+
+Be careful:
+
+1.  (Intercept):1 for outcome me = over a year ago vs never
+2.  (Intercept):2 for outcome me =  within a year vs never
+3.  hist2yes:1 for outcome me = over a year ago vs never
+4.  hist2yes:2 for outcome me =  within a year vs never
+
+Next, to replicate results for **detc** like on this webpage <http://www.ats.ucla.edu/stat/stata/examples/alr2/alr2stata8.htm>
+
+```{r}
+dat.m1$detc2 <- factor(dat.m1$detc)
+table(dat.m1$me2, dat.m1$detc2)
+levels(dat.m1$me3)
+```
+
+Now, we will fit the multinomial logit using `VGAM::vglm`. The comparisons are:
+
+1.  group 1 vs group 3 : for outcome me = over a year ago vs never
+2.  group 2 vs group 3 : for outcome me =  within a year vs never
+
+```{r}
+fitmlog2 <- vglm(me3 ~ detc2, multinomial, data = dat.m1)
+summary(fitmlog2)
+```
+
+## Inferences
+
+In inference, we:
+
+1.  examine the $95\%$ CI
+2.  examine the p-values
+
+We want to combine these:
+
+1.  the regression coefficents for all $\hat\beta$
+2.  the confidence intervales for all $\hat\beta$ 
+3.  combine the $\hat\beta$ and the corresponding $95\%$ CIs
+
+
+
+```{r}
+b_fitmlog2 <- coef(fitmlog2)
+ci_fitmlog2 <- confint(fitmlog2)
+b_ci_fitmlog2 <- cbind(b_fitmlog2, ci_fitmlog2)
+b_ci_fitmlog2
+```
+
+
+Afterwards, we will *exponentiate* the coefficients to obtain the **relative rate ratio**
+
+```{r}
+rrr_fitmlog2 <- exp(b_ci_fitmlog2)
+tab_fitmlog2 <- cbind(b_ci_fitmlog2, rrr_fitmlog2)
+colnames(tab_fitmlog2) <- c('b', 'lower b', 'upper b', 'rrr',
+                          'lower rrr', 'upper rrr')
+tab_fitmlog2
+```
+
+# Practicals 2
+
+## Estimation
+
+### VGAM package
+
+Adding more covariates (independent variables) to the model:
+
+1.  sympt as a factor variable  
+2.  pb 
+3.  hist 
+4.  bse
+5.  detc
+
+We will obtain the estimates as:
+
+```{r}
+fitmlog3 <- vglm(me3 ~ factor(sympt) + pb + hist2 + bse + detc2,
+                 multinomial, data = dat.m1)
+summary(fitmlog3)
+```
+
+Variable **sympt** has 4 categories
+
+```{r}
+dat.m1 %>% count(sympt)
+```
+
+Recode **sympt** (4 categories) into 2 category factor variable **symptd** using `ifelse()` function
+
+```{r}
+dat.m1$symptd <- ifelse(dat.m1$sympt<3, '<3', '3 or more')
+dat.m1 %>% count(symptd)
+```
+
+Now, we rerun the analysis:
+
+```{r}
+fitmlog4 <- vglm(me3 ~ symptd + pb + hist2 + bse + detc2,
+                 multinomial, data = dat.m1)
+summary(fitmlog4)
+```
+
+## Inferences 
+
+Get the confidence intervals and examine p-values
+
+```{r}
+b_fitmlog4 <- coef(fitmlog4)
+ci_fitmlog4 <- confint(fitmlog4)
+cbind(b_fitmlog4, ci_fitmlog4)
+```
+
+Now we convert variable `detc` (3 categories) to a binary category (`detcd`). Then, run the model with covariate `detcd`
+
+```{r}
+dat.m1$detcd <- ifelse(dat.m1$detc<3, '<3', '3 or more')
+fitmlog5 <- vglm(me3 ~ symptd + pb + hist2 + bse + detcd,
+                 multinomial, data = dat.m1)
+summary(fitmlog5)
+```
+
+Calculate the RRR and their 95% CI
+
+```{r}
+b_rrr_fitmlog5 <- cbind(coef(fitmlog5), exp(coef(fitmlog5)))
+ci_b_rrr.fitmlog5 <- cbind(confint(fitmlog5), exp(confint(fitmlog5)))
+res_fitmlog5 <- cbind(b_rrr_fitmlog5, ci_b_rrr.fitmlog5)
+colnames(res_fitmlog5) <- c('b', 'rrr', 'lower 95% b','upper 95% b', 'lower 95% rrr' , 'upper b95% rrr')
+res_fitmlog5
+```
+
+Making a better table using **knitr** and **kableExtra** packages
+
+```{r}
+library(knitr)
+library(kableExtra)
+kable(res_fitmlog5, format = 'latex', digits = 2)
+```
+
+
+## Prediction
+
+### Predict the log odds
+
+The model:
+
+```{r}
+summary(fitmlog1)
+```
+
+
+The predicted for the first 6 observations:
+
+1.  the predicted log odds for over a year ago vs never in column 1
+2.  the predicted log odds for within a year vs never in column 2 
+
+```{r}
+head(predict.vgam(fitmlog1, type = 'link'))
+```
+
+Manual calculation for:
+
+1.  1st observation log odds
+2.  3rd observation log odds 
+
+```{r}
+# ptn 1: hist2 = no
+# logit me3=over a year ago = [1]  vs me3= never =[3]
+-1.2504928 +  1.0093308*0
+# logit me3=within a year = [2]  vs me3= never =[3]
+-0.9509763 + 1.2563579 *0
+
+# ptn 3: hist2 = yes
+# logit me3=over a year ago = [1]  vs me3= never =[3]
+-1.2504928 +  1.0093308*1
+# logit me3=within a year = [2]  vs me3= never =[3]
+-0.9509763 + 1.2563579*1
+```
+
+### Predict the probability 
+
+The  probability for the first 6 observation
+
+```{r}
+head(predict.vgam(fitmlog1, type = 'response'))
+```
+
+Manual calculation for probability. Let us take the first observation where,
+
+1.  log odds for group over a year ago: -1.2504928         
+2.  log odds for group within a year: -0.9509763
+
+```{r}
+# probability being in the reference group (me3 == never = [3])
+1/(1 + exp(-1.2504928) + exp(-0.9509763))
+# probability being in the over a year ago group (me3 == over a year ago = [2])
+exp(-1.2504928)/(1 + exp(-1.2504928) + exp(-0.9509763))
+# probability being in the within a year group (me3 == within a year = [1])
+exp(-0.9509763)/(1 + exp(-1.2504928) + exp(-0.9509763))
+```
+
+# Practical 3 
+
+## Using multinom from nnet package
+
+Unlike VGAM::vglm function - where the reference or the base outcome is the largest group (level) - the nnet::multinom uses the smallest group (level) as the reference or base outcome. 
+
+```{r}
+library(nnet)
+mlog_nnet <- multinom(me3 ~ hist2, data = dat.m1)
+summary(mlog_nnet)
+```
+
+
+
+# Practical 4 (Optional)
+
+## Data
+
+Next, analyse data from <https://onlinecourses.science.psu.edu/stat504/book/export/html/171> 
+
+The dataset in a `.txt` file is named **gator.txt**. Some facts about the data - Researchers classified the stomach contents of 219 captured alligators into five categories: 
+
+1. Fish (the most common primary food choice)
+2. Invertebrate (snails, insects, crayfish, etc.)
+3. Reptile (turtles, alligators)
+4. Bird
+5. and Other (amphibians, plants, household pets, stones, and other debris).
+
+Because the usual primary food choice of alligators appears to be fish, we'll use fish as the baseline category; the four logit equations will then describe the log-odds that alligators select other primary food types instead of fish.
+
+Now, we will use the **gator** data. WARNING, the data are in the wide format. 
+
+```{r}
+gator <- read.table('gator.txt', header=TRUE)
+head(gator)
+```
+
+One of the main predictor (covariate/independent variable) is **Lake**
+
+```{r}
+levels(gator$Lake)
+```
+
+Different software might treat different level as its baseline level. For example, let's examine *Lake* variable
+
+In this above function, the baseline category is *george*. To replicate the results on the webpage, we assign *hancock* as the baseline category (level) for the predictor variable *Lake*. To do that, we:
+
+```{r}
+contrasts(gator$Lake) <- contr.treatment(levels(gator$Lake), base=2)
+contrasts(gator$Lake)
+levels(gator$Lake)
+```
+
+## Estimation
+
+from VGAM package
+
+For the outcome, we can specify the level for the baseline in the **vglm** arguments
+
+```{r}
+
+fit.gat<-vglm(cbind(Bird,Invertebrate,Reptile,Other,Fish)~Lake+Size+Gender, data=gator, family=multinomial)
+summary(fit.gat)
+
+```
+
+The results tell us that the four logit equations predict the log-odds of:
+
+1.  birds versus fish (and from the R output: 1 vs 5),
+2.  invertebrates versus fish (2 vs 5),
+3.  other versus fish (4 vs 5), and
+4.  reptiles versus fish (3 vs 5).
+
+## Interpretation
+
+The intercepts give the estimated log-odds for the reference group that is:
+lake = Hancock, size = small, sex = male. 
+
+Now, we see how three stat packages work
+
+1.  vglm::VGAM
+2.  multinom::nnet
+3.  mlogit in STATA
+
+```{r}
+library(foreign)
+dat.m2 <- read.dta('APS.dta', convert.factors = TRUE)
+names(dat.m2)
+summary(dat.m2)
+levels(dat.m2$place3)
+```
+
+Now, we will change levels to one,two VS zero (base outcome)
+
+```{r}
+library(VGAM)
+dat.m2$place3b <- factor(dat.m2$place3, c("one","two","zero"))
+levels(dat.m2$place3b)
+fit.m2 <- vglm(place3b ~ age + race + dangerd + behav +
+                 custd, multinomial, data = dat.m2)
+summary(fit.m2)
+```
+
+To obtain the rrr
+
+```{r}
+exp(coef(fit.m2))
+```
+
+## Estimation from the nnet package
+
+Look, how the results we obtained from nnet package. Of all, I guess the results from multinom::nnet are the easiest.
+
+```{r}
+library(nnet)
+fit.m3<-multinom(place3 ~ age + race + dangerd + behav +
+                 custd, data = dat.m2)
+summary(fit.m3)
+```
+
+# Comparisons between packages and software
+
+1.  Results from VGAM::vglm and nnet::multinom are similar. 
+2.  In Stata, we run "mlogit place3 age race dangerd behav los custd". The results are easier to look at
+3.  **mlogit** package in R requires data to be in wide format
+4.  `nnet::multinom` does not provide p-values 
+
+# References
+
+1.  <https://stats.idre.ucla.edu/stata/examples/alr2/applied-logistic-regression-second-edition-by-hosmer-and-lemeshowchapter-8-special-topics/m>
+2.  <https://onlinecourses.science.psu.edu/stat504/node/171>     
+3.  <https://stats.idre.ucla.edu/r/dae/multinomial-logistic-regression/>
+4.  <https://cran.r-project.org/web/packages/mlogit/vignettes/mlogit.pdf>
+5.  Long JS, Freese J. Models for Nominal Outcomes In Regression Models for Categorical Dependent Variables Using Stata
+6.  Hosmer DW Jr, Lemeshow S, Sturdivant RX. Special Topics In Applied Logistic Regression
+

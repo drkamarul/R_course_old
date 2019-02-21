@@ -1,0 +1,2 @@
+"0","dat.m1$symptd <- ifelse(dat.m1$sympt<3, '<3', '3 or more')"
+"0","dat.m1 %>% count(symptd)"
